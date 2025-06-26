@@ -1,0 +1,315 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr">
+
+<head>
+
+    <!-- Nécessaire pour validation -->
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <!-- Titre de la page -->
+    <title>Affichage du calendrier par Gabriel Medina</title>
+
+    <!-- Insertion d’un fichier contenant une feuille de style -->
+    <link rel="stylesheet" type="text/css" href="styleProjet.css" />
+
+    <!-- Feuille de style locale -->
+    <style type="text/css">
+    </style>
+
+    <!-- Insertion d’un fichier contenant le code JavaScript -->
+    <script type="text/javascript" src="./libUtilitaires.js"></script>
+    <script type="text/javascript" src="date.js"></script>
+
+    <!-- Insertion du code JavaScript local -->
+    <script type="text/javascript">
+        // Données attrapées par GET de page précedente pour calculer l'écart entre aujourdhui et cette date.
+        // Je créé des constantes à l'extérieur de la fonction avec le but de faire mon code plus lisible et facile à gérer 
+        const anneeChoisie = recupereDonnee("ddlAnnee");
+        const moisChoisi = recupereDonnee("ddlMois");
+        const jourChoisi = recupereDonnee("ddlJour");
+        const heureChoisie = recupereDonnee("ddlHeure");
+        const minuteChoisi = recupereDonnee("ddlMinute");
+        const dateChoisie = new Date(anneeChoisie, moisChoisi, jourChoisi, heureChoisie, minuteChoisi);          // Instance d'objet Date avec les élèments récus. 
+
+        // FONCTIONS
+        function rafraichitCompteARebours() {
+            let aujourdhui = new Date();                        // Instance de nouvelle date aujourdhui
+            // Calcul des ÉCARTS
+            let ecartJours = joursEntreDeuxDates(aujourdhui, dateChoisie);
+            let ecartHeures = 1 - (dateChoisie.getHours() - aujourdhui.getHours());
+            let ecartMinutes = 60 + (dateChoisie.getMinutes() - aujourdhui.getMinutes());
+            let ecartSecondes = 60 + (dateChoisie.getSeconds() - aujourdhui.getSeconds());
+            // Affichage du TEMPS RESTANT pour la dateChoisie 
+            document.getElementById("lblJours").innerHTML = ecartJours;
+            document.getElementById("lblHeures").innerHTML = Math.abs(ecartHeures);
+            document.getElementById("lblMinutes").innerHTML = ecartMinutes;
+            document.getElementById("lblSecondes").innerHTML = ecartSecondes;
+        }
+
+        function construireCalendrier(intMoisAAfficher, intAnneeAAfficher) {
+            let aujourdhui = new Date();                                     // Répère du moment dans le temps où je suis
+            // AFFICHAGE AU DESSUS DU CALENDRIER
+            document.getElementById("lblMois").innerHTML = moisEnLitteral(intMoisAAfficher, 1);
+            document.getElementById("lblAnnee").innerHTML = intAnneeAAfficher;
+
+            // BOUTONS MOIS SUIVANT/PRÉCEDENT
+            let btnMoisSuivant = document.getElementById("btnMoisSuivant");
+            let btnMoisPrecedent = document.getElementById("btnMoisPrecedent");
+
+            if (estDansMois(intMoisAAfficher, intAnneeAAfficher, aujourdhui)) {
+                btnMoisPrecedent.disabled = true;
+            } else {
+                btnMoisPrecedent.disabled = false;
+            }
+            if (estDansMois(intMoisAAfficher, intAnneeAAfficher, dateChoisie)) {
+                btnMoisSuivant.disabled = true;
+            } else {
+                btnMoisSuivant.disabled = false;
+            }
+
+            // AFFICHAGE DU CALENDRIER 
+            // Dans cette partie du code, je déclare et initialise une variable pour connaître le jour de la semaine (Dimanche - Samedi)
+            // où commence le mois. J'ai besoin de ces informations pour creer mon premier 'colSpan' à l'affichage
+            const premierJourDuMois = (new Date(intAnneeAAfficher, intMoisAAfficher, 1)).getDay();
+            let jourCalendrier = 1;  // Variable de parcours dans tous les jours de mon calendrier. Elle me servira pour le construire 
+            let nbrJoursMois = nombreJoursMois(intMoisAAfficher, intAnneeAAfficher);  // Retourne quantité de jours dans chaque mois 
+            let ecartJours = joursEntreDeuxDates((new Date(intAnneeAAfficher, intMoisAAfficher, jourCalendrier)), dateChoisie);
+            let lignesCalendrier = 3;
+            let constructCalendrier = "<table class='sTableauCentre'>\n<tr>\n";
+
+            //Pour la construction de mon calendrier, je procède en 3 étapes: 1/ L'entête de mon calendrier contenant les jours en littéral 
+            // 2/ Le corps du calendrier, composé soit par les 3 ou 4 lignes suivantes selon le cas. 3/ La dernière ligne du calendrier 
+            // contenant un dernier parcours de jours jusqu'à l'épuissement de jours (que le jourCalendrier soit égal au nombre de jours pour ce mois)
+
+            // ENTETE DU CALENDRIER (AFFICHAGE DES JOURS DE DIMANCHE À SAMEDI)
+            for (let i = 0; i < 7; i++) {
+                constructCalendrier += `<td class="sCellEnteteColonne" ><b>${jourSemaineEnLitteral(i, 1)}</b></td>\n`;
+            }
+            constructCalendrier += "</tr>\n";
+
+            // PREMIÈRE LIGNE DE JOURS DU CALENDRIER
+            // Ici, je profite de la variable "premierJourDuMois" qui, selon son index, me permettra de connaître le 'colspan' nécessaire pour mon 
+            // premier 'td' (table data) qui sera vide.
+            // ATTENTION: La variable "ecartJours" située à l'intérieur des boubles for n'est pas la même variable créé avant. En faite, cette variable permet de 
+            // calculer l'écart entre le jour de départ et le 'jourCalendrier' qui augmente d'une unité après chaque cycle.
+            if (premierJourDuMois > 0) {
+                constructCalendrier += `<td class='sCellDate' colspan="${premierJourDuMois}" ></td>\n`;
+                for (let i = premierJourDuMois; i < 7; i++) {
+                    let ecartJours = joursEntreDeuxDates((new Date(intAnneeAAfficher, intMoisAAfficher, jourCalendrier)), dateChoisie);
+                    if (ecartJours > 0) {
+                        // Identification jour normal
+                        // Conditionnel pour jour courant
+                        if (aujourdhui.getDate() == jourCalendrier) {
+                            constructCalendrier += `<td class='sCellJourCourant'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                        } else {
+                            constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                        }
+                    } else if (ecartJours == 0) {
+                        // Identification jour du départ
+                        constructCalendrier += `<td class='sCellDate sCellJourDepart'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                    } else {
+                        // Identification jour lorsqu'on dépasse jour de départ
+                        constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n</td>\n`;
+                    }
+                    jourCalendrier++;
+                }
+                constructCalendrier += "</tr>";
+
+            } else {
+                for (let i = premierJourDuMois; i < 7; i++) {
+                    let ecartJours = joursEntreDeuxDates((new Date(intAnneeAAfficher, intMoisAAfficher, jourCalendrier)), dateChoisie);
+                    if (ecartJours > 0) {
+                        // Identification jour normal
+                        constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                    } else if (ecartJours == 0) {
+                        // Identification jour du départ
+                        constructCalendrier += `<td class='sCellDate sCellJourDepart'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                    } else {
+                        // Identification jour lorsqu'on dépasse jour de départ
+                        constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n</td>\n`;
+                    }
+                    jourCalendrier++;
+                }
+                constructCalendrier += "</tr>";
+            }
+
+            // CORPS CALENDRIER
+            // ici, je m'en sers de la variable "premierJourDuMois" qui contient un index, puis je somme ce nombre avec la quantité de jours dans le mois
+            // Cela me permettra de connaître la quantité d'espaces vides (Cells) dont j'aurais besoin. Avoir un résultat supérieur à 35 implique que mon
+            // calendrier aura besoin de 5 lignes. Par conséquent, le parcours dans la boucle for destinée aux lignes de mon calendrier sera de 4 et non
+            // pas de 3.
+
+            let totalEspacesCalendrier = nbrJoursMois + premierJourDuMois;
+            let iterations = totalEspacesCalendrier / 5;
+            if (iterations > 7) {
+                lignesCalendrier++;    // Ajustement pour calculer le nombre de lignes que mon calendrier aura besoin de creer 
+                // en fonction du décalage initial (Colspan) + quantité de jours dans ce mois
+            }
+
+            for (let i = 0; i < lignesCalendrier; i++) {
+                constructCalendrier += "<tr>\n";
+                for (let j = 0; j < 7; j++) {
+                    if ((jourCalendrier == jourChoisi) && (moisChoisi == intMoisAAfficher) && (anneeChoisie == intAnneeAAfficher)) {
+                        let ecartJours = joursEntreDeuxDates((new Date(intAnneeAAfficher, intMoisAAfficher, jourCalendrier)), dateChoisie);
+                        console.log(ecartJours)
+                        if (ecartJours > 0) {
+                            // Identification jour normal
+                            constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                        } else if (ecartJours == 0) {
+                            constructCalendrier += `<td class='sCellDate sCellJourDepart'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                        }
+                        else {
+                            constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n</td>\n`;
+                        }
+                        jourCalendrier++;
+                    }
+                    else {
+                        let ecartJours = joursEntreDeuxDates((new Date(intAnneeAAfficher, intMoisAAfficher, jourCalendrier)), dateChoisie);
+                        if (ecartJours > 0) {
+                            constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                        } else if (ecartJours == 0) {
+                            constructCalendrier += `<td class='sCellDate sCellJourDepart'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                        }
+                        else {
+                            constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n</td>\n`;
+                        }
+                        jourCalendrier++;
+                    }
+                }
+                constructCalendrier += "</tr>\n";
+            }
+            //Dernière ligne
+            constructCalendrier += "<tr>";
+            for (let i = jourCalendrier; i <= nbrJoursMois; i++) {
+                if ((jourCalendrier == jourChoisi) && (moisChoisi == intMoisAAfficher) && (anneeChoisie == intAnneeAAfficher)) {
+                    let ecartJours = joursEntreDeuxDates((new Date(intAnneeAAfficher, intMoisAAfficher, jourCalendrier)), dateChoisie);
+                    if (ecartJours > 0) {
+                        constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                    } else if (ecartJours == 0) {
+                        constructCalendrier += `<td class='sCellDate sCellJourDepart'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                    }
+                    else {
+                        constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n</td>\n`;
+                    }
+                    jourCalendrier++;
+                } else {
+                    let ecartJours = joursEntreDeuxDates((new Date(intAnneeAAfficher, intMoisAAfficher, jourCalendrier)), dateChoisie);
+                    if (ecartJours > 0) {
+                        constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                    } else if (ecartJours == 0) {
+                        constructCalendrier += `<td class='sCellDate sCellJourDepart'><span class="sPetiteDate">${jourCalendrier}</span>\n<br>${ecartJours}</br></td>\n`;
+                    }
+                    else {
+                        constructCalendrier += `<td class='sCellDate'><span class="sPetiteDate">${jourCalendrier}</span>\n</td>\n`;
+                    }
+                    jourCalendrier++;
+                }
+            }
+            constructCalendrier += "</tr>\n";
+
+            constructCalendrier += "</table>";
+            document.getElementById("lblCalendrierCourant").innerHTML = constructCalendrier;
+        }
+
+        function chargePageSelectionneDate() {
+            location.href = "selectionne-date.html"
+        }
+
+        function nouveauCalendrier(intSens) {
+            // A PROGRAMMER:
+            // La fonction nouveauCalendrier doit:
+            let moisAvantClick = moisLitteralEnIndex(document.getElementById("lblMois").textContent);
+            let anneeAvantClick = parseInt(document.getElementById("lblAnnee").textContent);
+            // alert(moisAvantClick, anneeAvantClick)
+            // 2 - Calculer le nouveau mois et année à afficher.
+            let moisMaintenant = moisAvantClick;
+            let anneeMaintenant = anneeAvantClick;
+            if (intSens > 0) {
+                if (moisMaintenant == 11) {
+                    moisMaintenant = 0;
+                    anneeMaintenant++;
+                } else {
+                    moisMaintenant++;
+                }
+            } else if (intSens < 0) {
+                if (moisMaintenant == 0) {
+                    moisMaintenant = 11;
+                    anneeMaintenant--;
+                } else {
+                    moisMaintenant--;
+                }
+            }
+            console.log(moisMaintenant, anneeMaintenant)
+            construireCalendrier(moisMaintenant, anneeMaintenant);
+
+
+        }
+    </script>
+
+</head>
+
+<body
+    onload="construireCalendrier(recupereMoisActuel(),recupereAnneeActuelle()); setInterval(rafraichitCompteARebours, 30)">
+    <div id="divEntete" class="sTexteCentre sLargeurDiv sEntete">
+        <span class="sTitreApp">
+            Mon calendrier de voyage<br />
+        </span> par
+        <span class="sAuteurApp">
+            Gabriel Medina
+        </span>
+    </div>
+
+    <div id="divCorps" class="sLargeurDiv sCorps">
+        <div id="divPanneauBoutons">
+            <table class="sTableauCentre">
+                <tr>
+                    <td class="sCellBouton">
+                        <input id="btnMoisPrecedent" type="button" value="<< Mois précédent"
+                            onclick="nouveauCalendrier(-1)" />
+                    </td>
+                    <td class="sCellBouton">
+                        <input id="btnNouvelleDate" class="sBoutonAffiche" type="button" value="Nouvelle date de voyage"
+                            onclick="chargePageSelectionneDate()" />
+                    </td>
+                    <td class="sCellBouton">
+                        <input id="btnMoisSuivant" class="sBoutonAffiche" type="button" value="Mois suivant >>"
+                            onclick="nouveauCalendrier(1)" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="divPanneauCalendrier" class="sTexteCentre">
+            <p class="sTexteCentre sTitreSection">
+                <span id="lblMois"></span> <span id="lblAnnee"></span>
+                <span id="lblCalendrierCourant" class="sTexteCentre"></span>
+            </p>
+        </div>
+        <div id="divPanneauCompteARebours" class="sTexteCentre sTexteGras">
+            <p>Il reste :</p>
+            <p><span id="lblJours"></span> jours, <span id="lblHeures"></span> heures, <span id="lblMinutes"></span>
+                minutes, <span id="lblSecondes"></span> secondes</p>
+            <p>Avant votre vol!</p>
+        </div>
+    </div>
+
+    <div id="divPanneauBoutons2">
+    </div>
+
+    <div id="divPiedDePage" class="sLargeurDiv sPiedDePage">
+        <p>
+            <a href="http://www.cgodin.qc.ca">
+                <img src="logoCGG.jpg" alt="logoCGG" />
+            </a>
+            <a href="http://www.cgodin.qc.ca/programme/techniques-informatique/">
+                Département d'informatique du Cégep Gérald-Godin
+            </a>
+            <br />
+            &copy; Gabriel Medina 2025
+        </p>
+    </div>
+
+</body>
+
+</html>
