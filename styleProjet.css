@@ -1,7 +1,7 @@
 ﻿body {
     font-family: arial;
     font-size: 12pt;
-    color: blue;
+    color: #a9684ad2;
     margin: 0;
 }
 
@@ -37,7 +37,7 @@ table {
 }
 
 .sCellJourDepart {
-    background-color: blue;
+    background-color: #FF9D3D;
     color: white;
     font-weight: bold;
 }
@@ -69,7 +69,7 @@ table {
 }
 
 .sEntete {
-    background-color: #FCFAEE;
+    background-color: #FCE7C8;
     margin-bottom: 5px;
     border-bottom-width: 2px;
     border-bottom-style: solid;
@@ -82,7 +82,7 @@ table {
 
 .sPiedDePage {
     clear: both;
-    background-color: #FCFAEE;
+    background-color: #FCE7C8;
     font-size: 90%;
     margin-top: 5px;
     border-top-width: 2px;
