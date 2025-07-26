@@ -1,4 +1,4 @@
-## 🎯 Objectif
+## Objectif
 
 L’objectif du projet est de démontrer la maîtrise des concepts fondamentaux du développement web côté client (HTML, CSS, JavaScript), notamment :
 
